@@ -1,1 +1,39 @@
+DeviceLogonEvents
+| where Timestamp {TimeRange}
+| where RemoteIPType == "Public"
+| where isnotempty(RemoteIP)
+| where LogonType in ("Network", "RemoteInteractive")
+| extend geo = geo_info_from_ip_address(RemoteIP)
+| extend Latitude  = toreal(geo.latitude),
+         Longitude = toreal(geo.longitude),
+         Country   = tostring(geo.country),
+         City      = tostring(geo.city)
+| where isnotempty(Latitude) and isnotempty(Longitude)
+| summarize Attempts        = count(),
+            Successes       = countif(ActionType == "LogonSuccess"),
+            Failures        = countif(ActionType == "LogonFailed"),
+            TargetedDevices = dcount(DeviceName),
+            Accounts        = make_set(AccountName, 25)
+         by RemoteIP, Country, City, Latitude, Longitude
+| extend MapLabel = strcat(RemoteIP, " (", Country, ") — ", Successes, " success / ", Attempts, " total")
+| project Latitude, Longitude, MapLabel, Attempts, Successes, Failures, TargetedDevices, RemoteIP, Country, City, Accounts
+| order by Successes desc, Attempts desc
 
+
+-----------------------
+
+
+DeviceLogonEvents
+| where Timestamp {TimeRange}
+| where RemoteIPType == "Public" and isnotempty(RemoteIP)
+| where LogonType in ("Network", "RemoteInteractive")
+| extend geo = geo_info_from_ip_address(RemoteIP)
+| summarize Attempts  = count(),
+            Successes = countif(ActionType == "LogonSuccess"),
+            Failures  = countif(ActionType == "LogonFailed"),
+            Devices   = dcount(DeviceName),
+            Accounts  = make_set(AccountName, 25)
+         by RemoteIP,
+            Country = tostring(geo.country),
+            City    = tostring(geo.city)
+| order by Successes desc, Attempts desc
