@@ -1,4 +1,4 @@
-# Azure-Sentinel-Security-Analytics-Visualization
+# Inbound Authentication Origins
 
 ## Project Overview
 
